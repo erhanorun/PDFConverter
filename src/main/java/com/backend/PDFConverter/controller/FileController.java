@@ -1,16 +1,11 @@
 package com.backend.PDFConverter.controller;
 
-import java.io.File;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import com.backend.PDFConverter.common.FileUtils;
-import com.backend.PDFConverter.service.FileService;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -26,17 +21,12 @@ import com.backend.PDFConverter.message.ResponseFile;
 import com.backend.PDFConverter.message.ResponseMessage;
 import com.backend.PDFConverter.model.FileDB;
 
-import static com.backend.PDFConverter.common.FileUtils.DEFAULT_OUTPUT_EXTENSION;
-
-@Slf4j
 @Controller
 @CrossOrigin("http://localhost:8080")
 public class FileController {
 
     @Autowired
     private FileStorageService storageService;
-    @Autowired
-    private FileService fileService;
 
     @PostMapping("/upload")
     public ResponseEntity<ResponseMessage> uploadFile(@RequestParam("file") MultipartFile file) {
@@ -79,29 +69,4 @@ public class FileController {
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileDB.getName() + "\"")
                 .body(fileDB.getData());
     }
-
-    @PostMapping("/convert")
-    public ResponseEntity<byte[]> convert(@RequestParam("inputFile") final MultipartFile inputFile) {
-        log.info("Converting file: " + inputFile.getOriginalFilename());
-        File tempFile = fileService.saveToTemp(inputFile);
-
-        byte[] result = fileService.convertDocumentDocxToPdf(tempFile);
-
-        tempFile.delete();
-
-        return getResponse(result, FileUtils.getFilenameWithoutExtension(inputFile) + DEFAULT_OUTPUT_EXTENSION);
-    }
-
-    private ResponseEntity<byte[]> getResponse(byte[] resultFile, String fileName) {
-        HttpHeaders headers = new HttpHeaders();
-        headers.add(HttpHeaders.CONTENT_ENCODING, "UTF-8");
-        headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"");
-
-        return ResponseEntity.ok()
-                .headers(headers)
-                .contentLength(resultFile.length)
-                .contentType(MediaType.APPLICATION_OCTET_STREAM)
-                .body(resultFile);
-    }
-
 }
